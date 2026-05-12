@@ -1,8 +1,8 @@
 {
-  "name": "focusbar",
+  "name": "focusbar-vscode-extension",
   "displayName": "FocusBar",
   "description": "Context-aware modes for VS Code. Curate your sidebar tools by what you're actually doing.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "RaphaelRibeiro",
   "engines": {
     "vscode": "^1.85.0"
