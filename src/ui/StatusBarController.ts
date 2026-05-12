@@ -2,17 +2,32 @@ import * as vscode from 'vscode';
 import { ModeStore } from '../modes/ModeStore';
 
 /**
- * Status bar item showing the active mode.
- * Click it → opens the mode switcher.
+ * Two status bar items, side by side on the left:
+ *
+ *   [$(target) Frontend]  [$(layout-sidebar-left) Show]
+ *     ↑ click: switch mode  ↑ click: reveal FocusBar sidebar
+ *
+ * The second item is the escape hatch when replace mode is on: hiding the
+ * native Activity Bar also hides the FocusBar icon there, so users need a
+ * persistent way back into the FocusBar sidebar after clicking through to
+ * Extensions, Source Control, etc.
  */
 export class StatusBarController {
-  private readonly item: vscode.StatusBarItem;
+  private readonly modeItem: vscode.StatusBarItem;
+  private readonly showItem: vscode.StatusBarItem;
   private readonly disposables: vscode.Disposable[] = [];
 
   constructor(private readonly store: ModeStore) {
-    this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    this.item.command = 'focusbar.switchMode';
-    this.item.tooltip = 'FocusBar — click to switch mode';
+    // Priority controls left-to-right ordering within the same alignment.
+    // Higher = further left. We want [mode] [show], so mode > show.
+    this.modeItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 101);
+    this.modeItem.command = 'focusbar.switchMode';
+    this.modeItem.tooltip = 'FocusBar — click to switch mode';
+
+    this.showItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+    this.showItem.command = 'focusbar.show';
+    this.showItem.text = '$(layout-sidebar-left) Show';
+    this.showItem.tooltip = 'Show the FocusBar sidebar (Ctrl/Cmd+K F)';
 
     this.disposables.push(
       store.onModeChange(() => this.render()),
@@ -30,18 +45,21 @@ export class StatusBarController {
       .get<boolean>('statusBarBadge', true);
 
     if (!enabled) {
-      this.item.hide();
+      this.modeItem.hide();
+      this.showItem.hide();
       return;
     }
 
     const mode = this.store.current();
     const icon = `$(${mode.icon ?? 'target'})`;
-    this.item.text = `${icon} ${mode.name}`;
-    this.item.show();
+    this.modeItem.text = `${icon} ${mode.name}`;
+    this.modeItem.show();
+    this.showItem.show();
   }
 
   dispose(): void {
     this.disposables.forEach(d => d.dispose());
-    this.item.dispose();
+    this.modeItem.dispose();
+    this.showItem.dispose();
   }
 }

@@ -1,21 +1,32 @@
 # FocusBar
 
-> Context-aware modes for VS Code. Curate your sidebar tools by what you're actually doing.
+> Replace VS Code's Activity Bar with a curated, mode-aware sidebar that reorganizes itself based on what you're actually doing.
 
-Tired of an Activity Bar with 15 icons you only use 3 of at a time? FocusBar adds a single icon — the **HUB** — whose sidebar reorganizes itself based on the *mode* you're in. Frontend work? You see Explorer, Search, Git, Debug. Editing a Dockerfile? You see Docker, SCM. Debug session running? You see Run & Debug front and center.
+Tired of an Activity Bar with 15 icons you only use 3 of at a time? FocusBar **replaces the native Activity Bar** with a single curated sidebar that shows only the tools relevant to your current mode — Frontend, Backend, DevOps, Debug, or whatever you define. Tools are **grouped by category**, not dumped in a flat list.
 
 **Modes switch automatically** based on the file you're editing, the markers in your workspace (`package.json`, `Dockerfile`, `Cargo.toml`, etc.), and whether a debug session is active. Or pin one manually with `Ctrl/Cmd+K M`.
 
-## Why FocusBar (and not just hiding icons)
+## How the "replace" works
 
-VS Code's extension API does not let third-party extensions reorder or individually hide other extensions' Activity Bar icons (open issue since 2019: [microsoft/vscode#86275](https://github.com/microsoft/vscode/issues/86275)). FocusBar takes a different route: it gives you **one** icon — a curated, mode-aware launcher that focuses the right view container with a click. You can keep the native Activity Bar, or hide it entirely (`View → Appearance → Activity Bar`) and navigate from the HUB.
+VS Code's extension API does not let third-party extensions reorder or individually hide other extensions' Activity Bar icons ([microsoft/vscode#86275](https://github.com/microsoft/vscode/issues/86275), open since 2019). FocusBar takes a different route:
+
+1. It **hides the entire native Activity Bar** using the built-in `workbench.activityBar.location` setting (the same one in `View → Appearance → Activity Bar Position → Hidden`).
+2. It contributes **its own sidebar** where the tools are grouped by category per mode.
+3. Each tool item, when clicked, focuses its target view container — so clicking "Docker" inside the FocusBar sidebar opens the Docker view exactly as the native Docker icon would.
+
+Result: instead of 15 flat icons always visible, you see one curated, grouped sidebar that changes with context.
+
+**Trade-off (be honest about it):** this is all-or-nothing. The native Activity Bar is either fully visible or fully hidden — there's no API to hide some icons and keep others. If you need a hybrid, you'll need to live with the native bar visible.
 
 ## Quickstart
 
 1. Install the extension.
-2. Click the FocusBar target icon in the Activity Bar.
-3. The sidebar shows the active mode's curated tools, grouped.
+2. Run **FocusBar: Replace Activity Bar (Hide Native)** from the Command Palette — or click the layout icon at the top of the FocusBar sidebar.
+3. The native Activity Bar disappears; the FocusBar sidebar takes over.
 4. `Ctrl/Cmd+K M` to switch modes. Or just open a `.tsx` file — Frontend mode kicks in automatically.
+5. To revert anytime, run **FocusBar: Restore Native Activity Bar**.
+
+If you'd rather keep the native bar visible and use FocusBar as a *secondary* curated view alongside it, just skip step 2 — FocusBar works fine without replace mode.
 
 ## Built-in modes
 
@@ -27,9 +38,26 @@ VS Code's extension API does not let third-party extensions reorder or individua
 | **DevOps** | `Dockerfile`, `docker-compose.yml`, `*.tf`, `k8s/**/*.yml` |
 | **Debug** | Active debug session (highest priority — overrides everything) |
 
-## Custom modes
+## Custom modes — visual editor
 
-Add your own in `settings.json`:
+Run **FocusBar: Open Mode Editor** (Command Palette or pencil icon in the sidebar header) to manage modes visually. No JSON editing required.
+
+The editor lets you:
+
+- Create, rename, and delete custom modes
+- Add/remove groups inside a mode and rename them inline
+- **Drag-and-drop** tools from the side palette directly into any group — or drag to reorder within/between groups
+- **Drag-and-drop** to reorder groups themselves
+- Extension icons load automatically — no manual icon lookup required
+- Edit auto-detect rules (file patterns, language IDs, workspace markers, debug)
+- **Duplicate** any built-in mode as a starting point (built-ins themselves are read-only)
+- **From installed extensions** — auto-generates a mode by categorizing every view container currently installed
+- **Export** any mode to your clipboard as JSON (foundation for shareable "Mode Packs")
+- **Import** a mode from clipboard JSON
+
+## Custom modes — JSON (advanced)
+
+If you'd rather edit `settings.json` directly, the schema is unchanged:
 
 ```json
 "focusbar.modes": [
@@ -97,15 +125,14 @@ npm run package         # produces a .vsix you can install locally
 
 - [ ] Pin a mode to disable auto-switch temporarily without flipping the setting
 - [ ] "Mode Packs" — shareable mode bundles (Frontend Pro, Rust DevOps, etc.)
-- [ ] Visual mode editor (webview) instead of editing JSON
-- [ ] Hide native Activity Bar via in-HUB toggle
 - [ ] Sync custom modes across machines via Settings Sync
 
 ## Limitations (be honest)
 
-- We can't reorder or hide individual icons from other extensions on the native Activity Bar — that's an API limitation, not a FocusBar bug.
+- **All-or-nothing on the native bar.** Replace mode hides the entire Activity Bar — there's no public API to hide individual icons (Docker, GitLens, etc.) while keeping others (Explorer, SCM). If you need that level of control, this isn't your tool.
 - `workspaceMarker` scanning has a hard cap (25 files per pattern) for speed.
 - Auto-switch picks the highest-priority match; ties are resolved by mode declaration order.
+- Replace mode toggles `workbench.activityBar.location` globally. If you sync settings across machines, the change syncs too.
 
 ## License
 

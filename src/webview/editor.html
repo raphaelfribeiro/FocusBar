@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource} https: data:; script-src ${cspSource} 'nonce-${nonce}'; style-src ${cspSource} 'unsafe-inline'; font-src ${cspSource};">
+  <link href="${codiconsUri}" rel="stylesheet" />
+  <link href="${styleUri}" rel="stylesheet" />
+  <title>FocusBar Editor</title>
+</head>
+<body>
+  <div class="layout">
+    <div class="tab-bar">
+      <div id="modeTabs" class="mode-tabs"></div>
+      <button class="tab-icon-btn" data-action="new-mode" title="New mode">
+        <i class="codicon codicon-add"></i>
+      </button>
+      <button class="tab-icon-btn" data-action="import" title="Import from clipboard">
+        <i class="codicon codicon-clippy"></i>
+      </button>
+    </div>
+
+    <main id="editor" class="editor">
+      <div id="emptyState" class="empty-state">
+        <i class="codicon codicon-target empty-icon"></i>
+        <p>Click <strong>+</strong> to create your first custom mode.</p>
+      </div>
+      <div id="editorContent" class="editor-content" hidden></div>
+    </main>
+  </div>
+
+  <template id="tpl-group">
+    <section class="group" draggable="true">
+      <header class="group-header">
+        <i class="codicon codicon-gripper drag-handle" title="Drag to reorder"></i>
+        <input class="group-label" type="text" placeholder="Group name" />
+        <button class="icon-btn danger" data-action="delete-group" title="Delete group">
+          <i class="codicon codicon-trash"></i>
+        </button>
+      </header>
+      <ul class="tool-list"></ul>
+      <div class="group-drop-hint">
+        <i class="codicon codicon-arrow-small-up"></i> Drag tools from the palette above
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-tool">
+    <li class="tool" draggable="true">
+      <i class="codicon codicon-gripper drag-handle"></i>
+      <i class="codicon tool-icon"></i>
+      <div class="tool-meta">
+        <span class="tool-label"></span>
+        <span class="tool-source"></span>
+      </div>
+      <button class="icon-btn danger" data-action="remove-tool" title="Remove">
+        <i class="codicon codicon-close"></i>
+      </button>
+    </li>
+  </template>
+
+  <script nonce="${nonce}" src="${scriptUri}"></script>
+</body>
+</html>
