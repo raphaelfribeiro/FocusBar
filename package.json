@@ -1,17 +1,12 @@
 {
-  "name": "focusbar-vscode-extension",
-  "displayName": "Focus Bar",
+  "name": "focusbar",
+  "displayName": "FocusBar",
   "description": "Context-aware modes for VS Code. Curate your sidebar tools by what you're actually doing.",
-  "version": "1.0.1",
-  "publisher": "RaphaelRibeiro",
+  "version": "1.1.0",
+  "publisher": "your-publisher",
   "engines": {
     "vscode": "^1.85.0"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/raphaelfribeiro/FocusBar.git"
-  },
-  "icon": "resources/icon.png",
   "categories": ["Other"],
   "keywords": ["activity bar", "productivity", "focus", "modes", "workflow", "sidebar"],
   "main": "./out/extension.js",
@@ -24,7 +19,7 @@
         {
           "id": "focusbar",
           "title": "FocusBar",
-          "icon": "resources/icon.svg"
+          "icon": "resources/icon-focus.svg"
         }
       ]
     },
@@ -33,7 +28,7 @@
         {
           "id": "focusbar.modeView",
           "name": "Current Mode",
-          "icon": "resources/icon.svg",
+          "icon": "resources/icon-focus.svg",
           "contextualTitle": "FocusBar"
         }
       ]
@@ -62,6 +57,29 @@
         "command": "focusbar.refresh",
         "title": "FocusBar: Reload Modes",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "focusbar.toggleReplaceMode",
+        "title": "FocusBar: Toggle Replace Activity Bar",
+        "icon": "$(layout-sidebar-left)"
+      },
+      {
+        "command": "focusbar.enableReplaceMode",
+        "title": "FocusBar: Replace Activity Bar (Hide Native)"
+      },
+      {
+        "command": "focusbar.disableReplaceMode",
+        "title": "FocusBar: Restore Native Activity Bar"
+      },
+      {
+        "command": "focusbar.openEditor",
+        "title": "FocusBar: Open Mode Editor",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "focusbar.show",
+        "title": "FocusBar: Show Sidebar",
+        "icon": "$(layout-sidebar-left)"
       }
     ],
     "menus": {
@@ -72,14 +90,24 @@
           "group": "navigation@1"
         },
         {
-          "command": "focusbar.toggleAutoSwitch",
+          "command": "focusbar.openEditor",
           "when": "view == focusbar.modeView",
           "group": "navigation@2"
         },
         {
-          "command": "focusbar.openSettings",
+          "command": "focusbar.toggleAutoSwitch",
           "when": "view == focusbar.modeView",
           "group": "navigation@3"
+        },
+        {
+          "command": "focusbar.toggleReplaceMode",
+          "when": "view == focusbar.modeView",
+          "group": "navigation@4"
+        },
+        {
+          "command": "focusbar.openSettings",
+          "when": "view == focusbar.modeView",
+          "group": "navigation@5"
         }
       ]
     },
@@ -88,6 +116,11 @@
         "command": "focusbar.switchMode",
         "key": "ctrl+k m",
         "mac": "cmd+k m"
+      },
+      {
+        "command": "focusbar.show",
+        "key": "ctrl+k f",
+        "mac": "cmd+k f"
       }
     ],
     "configuration": {
@@ -155,14 +188,18 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run compile && npm run copy-webview",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "copy-webview": "node -e \"const fs=require('fs'),path=require('path');const src='src/webview',dst='out/webview';fs.mkdirSync(dst,{recursive:true});for(const f of fs.readdirSync(src))fs.copyFileSync(path.join(src,f),path.join(dst,f));console.log('webview assets copied');\"",
     "package": "vsce package"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
     "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "@vscode/codicons": "^0.0.36"
   }
 }

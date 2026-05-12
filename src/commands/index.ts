@@ -1,11 +1,15 @@
 import * as vscode from 'vscode';
 import { ModeRegistry } from '../modes/ModeRegistry';
 import { ModeStore } from '../modes/ModeStore';
+import { ReplaceModeController } from '../ui/ReplaceModeController';
+import { CustomModeEditor } from '../customMode/CustomModeEditor';
 
 export function registerCommands(
   context: vscode.ExtensionContext,
   registry: ModeRegistry,
-  store: ModeStore
+  store: ModeStore,
+  replaceMode: ReplaceModeController,
+  editor: CustomModeEditor
 ): void {
 
   context.subscriptions.push(
@@ -43,7 +47,10 @@ export function registerCommands(
     vscode.commands.registerCommand('focusbar.toggleAutoSwitch', async () => {
       const cfg = vscode.workspace.getConfiguration('focusbar');
       const current = cfg.get<boolean>('autoSwitch', true);
-      await cfg.update('autoSwitch', !current, vscode.ConfigurationTarget.Workspace);
+      const target = vscode.workspace.workspaceFolders?.length
+        ? vscode.ConfigurationTarget.Workspace
+        : vscode.ConfigurationTarget.Global;
+      await cfg.update('autoSwitch', !current, target);
       vscode.window.setStatusBarMessage(
         `FocusBar auto-switch: ${!current ? 'ON' : 'OFF'}`,
         2000
@@ -55,6 +62,35 @@ export function registerCommands(
         'workbench.action.openSettings',
         '@ext:your-publisher.focusbar'
       );
+    }),
+
+    vscode.commands.registerCommand('focusbar.toggleReplaceMode', async () => {
+      await replaceMode.toggle();
+    }),
+
+    vscode.commands.registerCommand('focusbar.enableReplaceMode', async () => {
+      await replaceMode.enable();
+    }),
+
+    vscode.commands.registerCommand('focusbar.disableReplaceMode', async () => {
+      await replaceMode.disable();
+    }),
+
+    vscode.commands.registerCommand('focusbar.openEditor', () => {
+      editor.open();
+    }),
+
+    vscode.commands.registerCommand('focusbar.show', async () => {
+      // Bring the FocusBar sidebar back to the front. This is the rescue
+      // command used by the status bar "Show" item and the keybinding —
+      // critical when replace mode is on, because the native activity bar
+      // icon is hidden along with all the others.
+      try {
+        await vscode.commands.executeCommand('workbench.view.extension.focusbar');
+      } catch {
+        // View container not yet registered (very early in activation).
+        // Safe to swallow — the user can retry.
+      }
     }),
 
     vscode.commands.registerCommand('focusbar.refresh', () => {
