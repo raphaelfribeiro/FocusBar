@@ -42,8 +42,10 @@ export class ModeStore {
     const previous = cfg.get<string>('currentMode');
     if (previous === modeId) return;
 
-    // Workspace-scoped so each project keeps its own active mode.
-    await cfg.update('currentMode', modeId, vscode.ConfigurationTarget.Workspace);
+    const target = vscode.workspace.workspaceFolders?.length
+      ? vscode.ConfigurationTarget.Workspace
+      : vscode.ConfigurationTarget.Global;
+    await cfg.update('currentMode', modeId, target);
     this.emitter.fire({ mode, source });
 
     if (source === 'user') {
