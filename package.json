@@ -1,0 +1,163 @@
+{
+  "name": "focusbar",
+  "displayName": "FocusBar",
+  "description": "Context-aware modes for VS Code. Curate your sidebar tools by what you're actually doing.",
+  "version": "0.1.0",
+  "publisher": "your-publisher",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "keywords": ["activity bar", "productivity", "focus", "modes", "workflow", "sidebar"],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "focusbar",
+          "title": "FocusBar",
+          "icon": "resources/icon-focus.svg"
+        }
+      ]
+    },
+    "views": {
+      "focusbar": [
+        {
+          "id": "focusbar.modeView",
+          "name": "Current Mode",
+          "icon": "resources/icon-focus.svg",
+          "contextualTitle": "FocusBar"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "focusbar.switchMode",
+        "title": "FocusBar: Switch Mode",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "focusbar.setMode",
+        "title": "FocusBar: Set Mode"
+      },
+      {
+        "command": "focusbar.toggleAutoSwitch",
+        "title": "FocusBar: Toggle Auto-Switch",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "focusbar.openSettings",
+        "title": "FocusBar: Open Settings",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "focusbar.refresh",
+        "title": "FocusBar: Reload Modes",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "focusbar.switchMode",
+          "when": "view == focusbar.modeView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "focusbar.toggleAutoSwitch",
+          "when": "view == focusbar.modeView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "focusbar.openSettings",
+          "when": "view == focusbar.modeView",
+          "group": "navigation@3"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "focusbar.switchMode",
+        "key": "ctrl+k m",
+        "mac": "cmd+k m"
+      }
+    ],
+    "configuration": {
+      "title": "FocusBar",
+      "properties": {
+        "focusbar.autoSwitch": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically switch modes based on active file type, workspace markers, and debug sessions."
+        },
+        "focusbar.currentMode": {
+          "type": "string",
+          "default": "default",
+          "description": "The currently active mode ID. Usually managed by the extension, but can be set manually."
+        },
+        "focusbar.statusBarBadge": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the active mode in the status bar."
+        },
+        "focusbar.modes": {
+          "type": "array",
+          "default": [],
+          "description": "User-defined modes. Merged with built-in modes; user modes with the same id override built-ins.",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "groups"],
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "icon": { "type": "string", "description": "Codicon name, e.g. 'rocket'." },
+              "description": { "type": "string" },
+              "groups": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["label", "tools"],
+                  "properties": {
+                    "label": { "type": "string" },
+                    "tools": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["type", "id"],
+                        "properties": {
+                          "type": { "type": "string", "enum": ["viewContainer", "view", "command"] },
+                          "id": { "type": "string" },
+                          "label": { "type": "string" },
+                          "icon": { "type": "string" },
+                          "description": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "autoDetect": {
+                "type": "array",
+                "items": { "type": "object" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}
