@@ -2,8 +2,9 @@
   "name": "focusbar-vscode-extension",
   "displayName": "Focus Bar",
   "description": "Context-aware modes for VS Code. Curate your sidebar tools by what you're actually doing.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "RaphaelRibeiro",
+  "icon": "resources/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/raphaelfribeiro/FocusBar.git"
