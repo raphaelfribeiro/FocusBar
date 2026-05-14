@@ -52,7 +52,7 @@ export function registerCommands(
         : vscode.ConfigurationTarget.Global;
       await cfg.update('autoSwitch', !current, target);
       vscode.window.setStatusBarMessage(
-        `FocusBar auto-switch: ${!current ? 'ON' : 'OFF'}`,
+        `FocusBar auto-switch: ${current ? 'OFF' : 'ON'}`,
         2000
       );
     }),
