@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
-import { Mode } from '../types';
+import { Mode, Tool } from '../types';
 import { BUILTIN_MODES } from './builtins';
+import { ExtensionDiscovery } from '../customMode/extensionDiscovery';
 
 /**
  * Combines built-in modes with user-defined ones from `focusbar.modes`.
@@ -19,6 +20,8 @@ export class ModeRegistry {
       this.modes.set(mode.id, mode);
     }
 
+    this.enrichDefaultMode();
+
     const userModes = vscode.workspace
       .getConfiguration('focusbar')
       .get<Mode[]>('modes', []);
@@ -30,6 +33,31 @@ export class ModeRegistry {
         console.warn('[FocusBar] Ignoring invalid user mode:', mode);
       }
     }
+  }
+
+  private enrichDefaultMode(): void {
+    const defaultMode = this.modes.get('default');
+    if (!defaultMode) return;
+
+    const extensionTools: Tool[] = new ExtensionDiscovery()
+      .list()
+      .filter(c => !c.builtin)
+      .map(c => ({
+        type: 'viewContainer' as const,
+        id: c.commandId,
+        label: c.title,
+        icon: c.icon
+      }));
+
+    if (extensionTools.length === 0) return;
+
+    this.modes.set('default', {
+      ...defaultMode,
+      groups: [
+        ...defaultMode.groups,
+        { label: 'Installed Extensions', tools: extensionTools }
+      ]
+    });
   }
 
   get(id: string): Mode | undefined {

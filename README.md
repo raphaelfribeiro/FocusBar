@@ -32,7 +32,7 @@ If you'd rather keep the native bar visible and use FocusBar as a *secondary* cu
 
 | Mode | Triggers |
 |------|----------|
-| **Default** | Fallback when nothing else matches |
+| **Default** | Fallback when nothing else matches — shows all built-in views plus every installed extension that contributes a view container |
 | **Frontend** | `.tsx`, `.jsx`, `.vue`, `.svelte`, languageId `typescriptreact`, etc. |
 | **Backend** | `.cs`, `.go`, `.java`, `.rs`, `.py`; `Cargo.toml`, `go.mod`, `pom.xml`, `*.csproj` |
 | **DevOps** | `Dockerfile`, `docker-compose.yml`, `*.tf`, `k8s/**/*.yml` |
