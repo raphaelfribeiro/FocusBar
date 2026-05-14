@@ -82,6 +82,21 @@ export class CustomModeEditor {
           break;
         }
 
+        case 'resetBuiltin': {
+          const modeToReset = this.allModes().find(m => m.id === msg.id);
+          const label = modeToReset?.name ?? msg.id;
+          const choice = await vscode.window.showWarningMessage(
+            `Reset "${label}" to its default? Your customizations will be lost.`,
+            { modal: true },
+            'Reset'
+          );
+          if (choice !== 'Reset') break;
+          await this.repository.delete(msg.id);
+          this.sendInit();
+          vscode.window.setStatusBarMessage(`FocusBar: "${label}" reset to default`, 2000);
+          break;
+        }
+
         case 'duplicate': {
           const source = this.allModes().find(m => m.id === msg.id);
           if (!source) return;
@@ -131,7 +146,12 @@ export class CustomModeEditor {
     }
   }
 
-  /** Built-in modes are marked with `_builtin: true` so the UI can disable edits. */
+  /**
+   * Merges built-ins with user overrides and annotates each mode:
+   *   _builtin: true       → original built-in, no user override yet
+   *   _isBuiltinId: true   → ID corresponds to a built-in (original OR overridden)
+   * Pure user modes have neither flag.
+   */
   private allModes(): Mode[] {
     const userMap = new Map(this.repository.list().map(m => [m.id, m]));
     const merged: Mode[] = [];
@@ -139,10 +159,10 @@ export class CustomModeEditor {
     for (const b of BUILTIN_MODES) {
       const userOverride = userMap.get(b.id);
       if (userOverride) {
-        merged.push(userOverride);
+        merged.push({ ...userOverride, _isBuiltinId: true } as any);
         userMap.delete(b.id);
       } else {
-        merged.push({ ...b, _builtin: true } as Mode & { _builtin: boolean });
+        merged.push({ ...b, _builtin: true, _isBuiltinId: true } as any);
       }
     }
     for (const u of userMap.values()) merged.push(u);
@@ -150,7 +170,7 @@ export class CustomModeEditor {
   }
 
   private stripBuiltinFlag(mode: Mode): Mode {
-    const { _builtin, ...rest } = mode as any;
+    const { _builtin, _isBuiltinId, ...rest } = mode as any;
     return rest;
   }
 

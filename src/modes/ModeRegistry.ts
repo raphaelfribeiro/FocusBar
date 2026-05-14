@@ -41,12 +41,14 @@ export class ModeRegistry {
 
     const extensionTools: Tool[] = new ExtensionDiscovery()
       .list()
-      .filter(c => !c.builtin)
+      .filter(c => !c.builtin && c.location === 'activitybar')
       .map(c => ({
         type: 'viewContainer' as const,
         id: c.commandId,
         label: c.title,
-        icon: c.icon
+        icon: c.icon,
+        lightIconDataUri: c.lightIconDataUri,
+        darkIconDataUri:  c.darkIconDataUri,
       }));
 
     if (extensionTools.length === 0) return;

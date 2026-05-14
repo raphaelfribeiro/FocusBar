@@ -9,7 +9,8 @@ export function registerCommands(
   registry: ModeRegistry,
   store: ModeStore,
   replaceMode: ReplaceModeController,
-  editor: CustomModeEditor
+  editor: CustomModeEditor,
+  treeView: vscode.TreeView<unknown>
 ): void {
 
   context.subscriptions.push(
@@ -60,7 +61,7 @@ export function registerCommands(
     vscode.commands.registerCommand('focusbar.openSettings', async () => {
       await vscode.commands.executeCommand(
         'workbench.action.openSettings',
-        '@ext:your-publisher.focusbar'
+        '@ext:RaphaelRibeiro.focusbar-vscode-extension'
       );
     }),
 
@@ -81,15 +82,14 @@ export function registerCommands(
     }),
 
     vscode.commands.registerCommand('focusbar.show', async () => {
-      // Bring the FocusBar sidebar back to the front. This is the rescue
-      // command used by the status bar "Show" item and the keybinding —
-      // critical when replace mode is on, because the native activity bar
-      // icon is hidden along with all the others.
       try {
-        await vscode.commands.executeCommand('workbench.view.extension.focusbar');
+        if (treeView.visible) {
+          await vscode.commands.executeCommand('workbench.action.closeSidebar');
+        } else {
+          await vscode.commands.executeCommand('workbench.view.extension.focusbar');
+        }
       } catch {
-        // View container not yet registered (very early in activation).
-        // Safe to swallow — the user can retry.
+        // safe to swallow — view container may not be registered yet
       }
     }),
 
