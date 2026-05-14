@@ -70,7 +70,9 @@ export class FocusBarTreeProvider implements vscode.TreeDataProvider<TreeNode> {
           t.label ?? t.id,
           vscode.TreeItemCollapsibleState.None
         );
-        item.iconPath = t.icon ? new vscode.ThemeIcon(t.icon) : undefined;
+        item.iconPath = (t.lightIconDataUri && t.darkIconDataUri)
+          ? { light: vscode.Uri.parse(t.lightIconDataUri), dark: vscode.Uri.parse(t.darkIconDataUri) }
+          : t.icon ? new vscode.ThemeIcon(t.icon) : undefined;
         item.tooltip = t.description ?? t.id;
         item.contextValue = 'focusbar.tool';
         item.command = this.commandForTool(t);

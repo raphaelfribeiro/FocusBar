@@ -2,7 +2,7 @@
   "name": "focusbar-vscode-extension",
   "displayName": "Focus Bar",
   "description": "Context-aware modes for VS Code. Curate your sidebar tools by what you're actually doing.",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "publisher": "RaphaelRibeiro",
   "icon": "resources/icon.png",
   "repository": {
@@ -32,7 +32,7 @@
       "focusbar": [
         {
           "id": "focusbar.modeView",
-          "name": "Current Mode",
+          "name": "",
           "icon": "resources/icon-focus.svg",
           "contextualTitle": "FocusBar"
         }
@@ -100,19 +100,24 @@
           "group": "navigation@2"
         },
         {
-          "command": "focusbar.toggleAutoSwitch",
+          "command": "focusbar.openSettings",
           "when": "view == focusbar.modeView",
           "group": "navigation@3"
         },
         {
-          "command": "focusbar.toggleReplaceMode",
+          "command": "focusbar.toggleAutoSwitch",
           "when": "view == focusbar.modeView",
-          "group": "navigation@4"
+          "group": "1_actions@1"
         },
         {
-          "command": "focusbar.openSettings",
+          "command": "focusbar.toggleReplaceMode",
           "when": "view == focusbar.modeView",
-          "group": "navigation@5"
+          "group": "1_actions@2"
+        },
+        {
+          "command": "focusbar.refresh",
+          "when": "view == focusbar.modeView",
+          "group": "1_actions@3"
         }
       ]
     },

@@ -14,6 +14,9 @@ export interface Tool {
   label?: string;
   /** Codicon name, e.g. 'files', 'source-control', 'debug-alt'. */
   icon?: string;
+  /** Theme-aware monochrome data URIs for extension-contributed SVG icons. */
+  lightIconDataUri?: string;
+  darkIconDataUri?: string;
   description?: string;
 }
 

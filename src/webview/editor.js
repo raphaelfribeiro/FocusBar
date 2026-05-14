@@ -187,9 +187,16 @@
       tab.appendChild(name);
 
       if (mode._builtin) {
+        // Original built-in, not yet customized
         const badge = document.createElement('span');
         badge.className = 'mode-tab-badge';
         badge.textContent = 'built-in';
+        tab.appendChild(badge);
+      } else if (mode._isBuiltinId) {
+        // Built-in that the user has customized
+        const badge = document.createElement('span');
+        badge.className = 'mode-tab-badge mode-tab-badge--modified';
+        badge.textContent = 'modified';
         tab.appendChild(badge);
       }
 
@@ -216,7 +223,6 @@
     nameInput.className = 'mode-name-input';
     nameInput.type = 'text';
     nameInput.value = mode.name;
-    nameInput.disabled = !!mode._builtin;
     nameInput.addEventListener('input', () =>
       updateSelected(m => ({ ...m, name: nameInput.value }), false)
     );
@@ -229,26 +235,17 @@
     editorContentEl.appendChild(header);
     renderToolbar();
 
-    // Built-in banner
-    if (mode._builtin) {
-      const banner = document.createElement('div');
-      banner.className = 'builtin-banner';
-      banner.innerHTML = `<i class="codicon codicon-info"></i>
-        This is a built-in mode. Click <strong>Duplicate</strong> in the toolbar to make an editable copy.`;
-      editorContentEl.appendChild(banner);
-    }
-
     // Meta row (icon + description)
     const meta = document.createElement('div');
     meta.className = 'mode-meta';
     meta.innerHTML = `
       <div class="meta-field">
         <label>Icon</label>
-        <input class="icon-input" type="text" value="${escape(mode.icon || '')}" placeholder="target" ${mode._builtin ? 'disabled' : ''} />
+        <input class="icon-input" type="text" value="${escape(mode.icon || '')}" placeholder="target" />
       </div>
       <div class="meta-field" style="flex:1">
         <label>Description</label>
-        <input type="text" style="flex:1; width:auto" value="${escape(mode.description || '')}" placeholder="Optional" ${mode._builtin ? 'disabled' : ''} />
+        <input type="text" style="flex:1; width:auto" value="${escape(mode.description || '')}" placeholder="Optional" />
       </div>
     `;
     const iconInput = /** @type {HTMLInputElement} */ (meta.querySelector('.icon-input'));
@@ -258,26 +255,22 @@
     editorContentEl.appendChild(meta);
 
     // Tool palette - drag source for adding tools to groups
-    if (!mode._builtin) {
-      editorContentEl.appendChild(renderPalette());
-    }
+    editorContentEl.appendChild(renderPalette());
 
     // Groups
     const groups = document.createElement('div');
     groups.className = 'groups-container';
-    mode.groups.forEach((g, i) => groups.appendChild(renderGroup(g, i, !!mode._builtin)));
+    mode.groups.forEach((g, i) => groups.appendChild(renderGroup(g, i, false)));
     editorContentEl.appendChild(groups);
 
-    if (!mode._builtin) {
-      const addGroupBtn = document.createElement('button');
-      addGroupBtn.className = 'ghost-btn add-group';
-      addGroupBtn.innerHTML = '<i class="codicon codicon-add"></i> Add group';
-      addGroupBtn.addEventListener('click', addGroup);
-      editorContentEl.appendChild(addGroupBtn);
-    }
+    const addGroupBtn = document.createElement('button');
+    addGroupBtn.className = 'ghost-btn add-group';
+    addGroupBtn.innerHTML = '<i class="codicon codicon-add"></i> Add group';
+    addGroupBtn.addEventListener('click', addGroup);
+    editorContentEl.appendChild(addGroupBtn);
 
     // Auto-detect section
-    editorContentEl.appendChild(renderAutoDetect(mode, !!mode._builtin));
+    editorContentEl.appendChild(renderAutoDetect(mode, false));
   }
 
   function renderToolbar() {
@@ -287,18 +280,21 @@
     if (!mode) return;
     toolbar.innerHTML = '';
 
-    if (mode._builtin) {
-      const dup = primaryBtn('Duplicate', () => post({ type: 'duplicate', id: mode.id }));
-      toolbar.appendChild(dup);
-      return;
-    }
-
     if (state.dirty) {
       toolbar.appendChild(primaryBtn('Save', save));
       toolbar.appendChild(secondaryBtn('Discard', () => post({ type: 'reload' })));
     }
+
+    toolbar.appendChild(secondaryBtn('Duplicate', () => post({ type: 'duplicate', id: mode.id })));
     toolbar.appendChild(secondaryBtn('Export', () => post({ type: 'export', id: mode.id })));
-    toolbar.appendChild(secondaryBtn('Delete', deleteSelected));
+
+    if (mode._isBuiltinId && !mode._builtin) {
+      // User override exists — offer reset back to factory default
+      toolbar.appendChild(dangerBtn('Reset to default', resetToDefault));
+    } else if (!mode._isBuiltinId) {
+      // Pure user mode — can be deleted entirely
+      toolbar.appendChild(dangerBtn('Delete', deleteSelected));
+    }
   }
 
   // ---------------- Icon helper ----------------
@@ -652,15 +648,20 @@
   // ---------------- Top-level actions ----------------
   function save() {
     const mode = getSelected();
-    if (!mode || mode._builtin) return;
+    if (!mode) return;
     post({ type: 'save', mode });
   }
 
   function deleteSelected() {
     const mode = getSelected();
-    if (!mode || mode._builtin) return;
-    // Confirmation is handled by the extension host via showWarningMessage
+    if (!mode || mode._isBuiltinId) return;
     post({ type: 'delete', id: mode.id });
+  }
+
+  function resetToDefault() {
+    const mode = getSelected();
+    if (!mode || !mode._isBuiltinId) return;
+    post({ type: 'resetBuiltin', id: mode.id });
   }
 
   // ---------------- Top-level button handlers ----------------
@@ -678,6 +679,13 @@
   function secondaryBtn(label, onClick) {
     const b = document.createElement('button');
     b.className = 'secondary-btn';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  function dangerBtn(label, onClick) {
+    const b = document.createElement('button');
+    b.className = 'danger-btn';
     b.textContent = label;
     b.addEventListener('click', onClick);
     return b;

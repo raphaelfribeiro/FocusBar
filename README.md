@@ -48,9 +48,11 @@ The editor lets you:
 - Add/remove groups inside a mode and rename them inline
 - **Drag-and-drop** tools from the side palette directly into any group — or drag to reorder within/between groups
 - **Drag-and-drop** to reorder groups themselves
-- Extension icons load automatically — no manual icon lookup required
+- Extension icons load automatically in monochrome, matching VS Code's activity bar style
 - Edit auto-detect rules (file patterns, language IDs, workspace markers, debug)
-- **Duplicate** any built-in mode as a starting point (built-ins themselves are read-only)
+- **Edit built-in modes** directly — changes are saved as user overrides; a `modified` badge appears on the tab
+- **Reset to default** — one click restores any customized built-in back to its factory state
+- **Duplicate** any mode as a starting point for a new one
 - **From installed extensions** — auto-generates a mode by categorizing every view container currently installed
 - **Export** any mode to your clipboard as JSON (foundation for shareable "Mode Packs")
 - **Import** a mode from clipboard JSON
