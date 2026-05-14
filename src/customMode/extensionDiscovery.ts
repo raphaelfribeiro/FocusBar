@@ -5,14 +5,21 @@ import * as path from 'path';
 export interface DiscoveredContainer {
   commandId: string;
   title: string;
-  /** Codicon name — used for built-ins. */
+  /** Codicon name — used for built-ins and codicon-based extension icons. */
   icon?: string;
-  /** Base64 data URI — used for extension-contributed icons. */
+  /** Base64 data URI of the original icon — used in webviews. */
   iconDataUri?: string;
+  /** Theme-aware monochrome data URIs for native tree view icons. */
+  lightIconDataUri?: string;
+  darkIconDataUri?: string;
   location: 'activitybar' | 'panel';
   source: string;
   builtin: boolean;
 }
+
+// Colors that match VS Code's sidebar icon appearance per theme
+const DARK_ICON_COLOR  = '#C5C5C5';
+const LIGHT_ICON_COLOR = '#424242';
 
 /**
  * Inspects all installed extensions + built-ins and returns every view container
@@ -46,12 +53,11 @@ export class ExtensionDiscovery {
         for (const container of list) {
           if (!container?.id || !container?.title) continue;
 
-          const { icon, iconDataUri } = this.resolveIcon(container.icon, ext.extensionPath);
+          const resolved = this.resolveIcon(container.icon, ext.extensionPath);
           result.push({
             commandId: `workbench.view.extension.${container.id}`,
             title: container.title,
-            icon,
-            iconDataUri,
+            ...resolved,
             location,
             source: ext.packageJSON?.displayName ?? ext.id,
             builtin: false
@@ -72,13 +78,26 @@ export class ExtensionDiscovery {
     });
   }
 
-  private resolveIcon(rawIcon: unknown, extPath: string): { icon?: string; iconDataUri?: string } {
+  private resolveIcon(
+    rawIcon: unknown,
+    extPath: string
+  ): Pick<DiscoveredContainer, 'icon' | 'iconDataUri' | 'lightIconDataUri' | 'darkIconDataUri'> {
     if (!rawIcon) return {};
 
-    // Object format: { "dark": "resources/icon-dark.svg", "light": "resources/icon-light.svg" }
+    // Object format: { "dark": "path", "light": "path" } — resolve each variant separately
     if (typeof rawIcon === 'object') {
       const obj = rawIcon as Record<string, unknown>;
-      return this.resolveIcon(obj.dark ?? obj.light, extPath);
+      if (obj.dark || obj.light) {
+        const dark  = obj.dark  ? this.resolveIconFile(String(obj.dark),  extPath) : undefined;
+        const light = obj.light ? this.resolveIconFile(String(obj.light), extPath) : undefined;
+        const fallback = dark ?? light;
+        return {
+          iconDataUri:      fallback?.original,
+          lightIconDataUri: light?.monochrome(LIGHT_ICON_COLOR) ?? dark?.monochrome(LIGHT_ICON_COLOR),
+          darkIconDataUri:  dark?.monochrome(DARK_ICON_COLOR)   ?? light?.monochrome(DARK_ICON_COLOR),
+        };
+      }
+      return {};
     }
 
     if (typeof rawIcon !== 'string') return {};
@@ -87,9 +106,22 @@ export class ExtensionDiscovery {
     const codiconMatch = rawIcon.match(/^\$\((.+)\)$/);
     if (codiconMatch) return { icon: codiconMatch[1] };
 
-    // File path — read and encode as data URI so the webview can display it
-    const fullPath = path.isAbsolute(rawIcon) ? rawIcon : path.join(extPath, rawIcon);
-    // Try the exact path first, then common variations (no extension → .svg / .png)
+    // File path
+    const resolved = this.resolveIconFile(rawIcon, extPath);
+    if (!resolved) return {};
+
+    return {
+      iconDataUri:      resolved.original,
+      lightIconDataUri: resolved.monochrome(LIGHT_ICON_COLOR),
+      darkIconDataUri:  resolved.monochrome(DARK_ICON_COLOR),
+    };
+  }
+
+  private resolveIconFile(
+    rawPath: string,
+    extPath: string
+  ): { original: string; monochrome: (color: string) => string | undefined } | undefined {
+    const fullPath = path.isAbsolute(rawPath) ? rawPath : path.join(extPath, rawPath);
     const candidates = [fullPath];
     if (!path.extname(fullPath)) {
       candidates.push(fullPath + '.svg', fullPath + '.png');
@@ -98,15 +130,49 @@ export class ExtensionDiscovery {
     for (const candidate of candidates) {
       try {
         const data = fs.readFileSync(candidate);
-        const ext = path.extname(candidate).toLowerCase();
-        const mime = ext === '.svg'  ? 'image/svg+xml' :
-                     ext === '.png'  ? 'image/png'     :
-                     (ext === '.jpg' || ext === '.jpeg') ? 'image/jpeg' : 'image/png';
-        return { iconDataUri: `data:${mime};base64,${data.toString('base64')}` };
+        const ext  = path.extname(candidate).toLowerCase();
+
+        if (ext === '.svg') {
+          const svgText = data.toString('utf-8');
+          const originalUri = `data:image/svg+xml;base64,${Buffer.from(svgText).toString('base64')}`;
+          return {
+            original:   originalUri,
+            monochrome: (color: string) => {
+              const mono = this.makeSvgMonochrome(svgText, color);
+              return `data:image/svg+xml;base64,${Buffer.from(mono).toString('base64')}`;
+            }
+          };
+        }
+
+        // PNG / JPEG — can't recolor; return original only (tree view will fall back to generic icon)
+        const mime = ext === '.png' ? 'image/png' : 'image/jpeg';
+        const originalUri = `data:${mime};base64,${data.toString('base64')}`;
+        return {
+          original:   originalUri,
+          monochrome: () => undefined   // signals "no monochrome available"
+        };
       } catch {
         // try next candidate
       }
     }
-    return {};
+    return undefined;
+  }
+
+  /**
+   * Replaces all fill/stroke color values in an SVG with a single flat color,
+   * producing a monochrome icon that matches VS Code's sidebar icon style.
+   * Values of "none" and "transparent" are intentionally preserved.
+   */
+  private makeSvgMonochrome(svg: string, color: string): string {
+    return svg
+      // Presentation attributes
+      .replace(/\bfill="(?!none\b|transparent\b)([^"]*)"/gi,   `fill="${color}"`)
+      .replace(/\bstroke="(?!none\b|transparent\b)([^"]*)"/gi, `stroke="${color}"`)
+      // Inline style properties
+      .replace(/\bfill\s*:\s*(?!none\b|transparent\b)[^;}"']*/gi,   `fill: ${color}`)
+      .replace(/\bstroke\s*:\s*(?!none\b|transparent\b)[^;}"']*/gi, `stroke: ${color}`)
+      // Gradient stop colors
+      .replace(/\bstop-color="([^"]*)"/gi,                `stop-color="${color}"`)
+      .replace(/\bstop-color\s*:\s*[^;}"']*/gi,           `stop-color: ${color}`);
   }
 }

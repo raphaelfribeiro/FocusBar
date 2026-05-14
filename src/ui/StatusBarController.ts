@@ -16,6 +16,7 @@ export class StatusBarController {
   private readonly modeItem: vscode.StatusBarItem;
   private readonly showItem: vscode.StatusBarItem;
   private readonly disposables: vscode.Disposable[] = [];
+  private sidebarVisible = false;
 
   constructor(private readonly store: ModeStore) {
     // Priority controls left-to-right ordering within the same alignment.
@@ -26,8 +27,6 @@ export class StatusBarController {
 
     this.showItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
     this.showItem.command = 'focusbar.show';
-    this.showItem.text = '$(layout-sidebar-left) Show';
-    this.showItem.tooltip = 'Show the FocusBar sidebar (Ctrl/Cmd+K F)';
 
     this.disposables.push(
       store.onModeChange(() => this.render()),
@@ -36,6 +35,17 @@ export class StatusBarController {
       })
     );
 
+    this.render();
+  }
+
+  wireTreeView(treeView: vscode.TreeView<unknown>): void {
+    this.sidebarVisible = treeView.visible;
+    this.disposables.push(
+      treeView.onDidChangeVisibility(e => {
+        this.sidebarVisible = e.visible;
+        this.render();
+      })
+    );
     this.render();
   }
 
@@ -54,6 +64,13 @@ export class StatusBarController {
     const icon = `$(${mode.icon ?? 'target'})`;
     this.modeItem.text = `${icon} ${mode.name}`;
     this.modeItem.show();
+
+    this.showItem.text = this.sidebarVisible
+      ? '$(layout-sidebar-left-off) Hide'
+      : '$(layout-sidebar-left) Show';
+    this.showItem.tooltip = this.sidebarVisible
+      ? 'Hide the FocusBar sidebar'
+      : 'Show the FocusBar sidebar (Ctrl/Cmd+K F)';
     this.showItem.show();
   }
 

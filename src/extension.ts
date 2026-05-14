@@ -31,13 +31,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     showCollapseAll: false
   });
 
+  statusBar.wireTreeView(treeView);
+
   const updateTitle = () => {
-    treeView.title = `FocusBar · ${store.current().name}`;
+    treeView.title = '';
   };
   store.onModeChange(updateTitle);
   updateTitle();
 
-  registerCommands(context, registry, store, replaceMode, editor);
+  registerCommands(context, registry, store, replaceMode, editor, treeView);
+
+  // Refresh the default mode's extension list whenever an extension activates or
+  // deactivates — handles lazy-activation extensions that weren't ready at startup.
+  context.subscriptions.push(
+    vscode.extensions.onDidChange(() => {
+      registry.refresh();
+      treeProvider.refresh();
+    })
+  );
 
   // Re-apply replace mode state if it was on when VS Code last closed.
   await replaceMode.restoreOnBoot();
